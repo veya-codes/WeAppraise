@@ -15,6 +15,12 @@
 
 **The first provider to be strangled will be NetSuite, due to batch-oriented behavior, low interactive coupling, and clear async suitability.**
 
+### Why NetSuite before other providers
+
+- Lower blast radius than payment-critical flows (HPCI) that directly impact checkout success and customer trust.
+- Already batch/scheduled by nature, which maps cleanly to queue + worker strangler patterns.
+- Has a clean extract boundary, so it can be strangled without touching UI session/auth complexity in early phases.
+
 ## First concrete vertical slice (PR1 target)
 
 ### Slice: NetSuite extract modernization
@@ -44,6 +50,13 @@
 2. **Mirrored write compare:** compare payload hashes, external response codes, and completion outcomes.
 3. **Cutover gate:** require parity threshold (e.g., >= 99.5% match) over agreed sample window.
 4. **Rollback:** feature flag routes traffic back to legacy path immediately if parity/SLI regresses.
+
+### Definition of done (NetSuite slice)
+
+- **Parity:** record counts and business totals reconcile between legacy and strangled path across agreed sample windows.
+- **Failure handling:** retries and dead-letter behavior are validated with test fault injection scenarios.
+- **Idempotency:** idempotency key format is implemented as `{tenantId}:{batchId}:{extractWindow}:{provider}` and duplicate deliveries are proven non-destructive.
+- **Observability:** end-to-end trace correlation is visible (API/job trigger → queue → worker → provider call) with dashboards for queue depth, success rate, retry rate, and DLQ backlog.
 
 ## Migration waves
 

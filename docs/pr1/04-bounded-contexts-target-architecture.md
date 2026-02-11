@@ -51,6 +51,16 @@
 - **Legacy DB evolution during strangler:** SQL-first scripts for legacy schemas/sprocs.
 - **Promotion rule:** any deviation from these defaults requires an ADR before PR2 implementation starts.
 
+### Why these defaults for PR2
+
+These defaults optimize PR2 for operational simplicity and delivery speed: App Service aligns with the team’s IIS-style hosting familiarity and reduces platform overhead for a single API deployable, while .NET Worker Service keeps background processing explicit in code before introducing additional container platform complexity. Service Bus is selected as the common async backbone to standardize retries and dead-letter handling across integration flows.
+
+### Decision boundary: when to deviate
+
+Move API or workers to Container Apps when throughput/auto-scaling pressure, background-job isolation needs, or independent deployment cadence materially exceed App Service + Worker Service operational limits. Move to AKS only for advanced platform requirements (service mesh/sidecars, complex networking controls, or large-scale microservice topology).
+
+For database migrations, PR2 defaults to EF Core migrations for new module-owned schemas to maximize developer velocity. Flyway can be introduced later if DBA governance requires SQL-first, centrally managed, repeatable migration pipelines across multiple independently deployed services.
+
 ## Reference target architecture
 
 - **Runtime:** .NET 8 modular monolith (single deployable initially).
