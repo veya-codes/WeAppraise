@@ -11,16 +11,17 @@ This folder contains the PR1 documentation set for assessing legacy current stat
 5. [04-bounded-contexts-target-architecture.md](./04-bounded-contexts-target-architecture.md)
 6. [05-strangler-migration-strategy.md](./05-strangler-migration-strategy.md)
 7. [06-risks-assumptions.md](./06-risks-assumptions.md)
+8. [07-evidence-appendix-inventories.md](./07-evidence-appendix-inventories.md)
 
 ## How to review this PR1 pack
 
-1. Start with the executive summary and solution map.
-2. Validate integrations/auth/data assumptions against known production behavior.
-3. Review bounded contexts and dependency rules for domain fit.
-4. Validate strangler sequencing and risk mitigations.
-5. Convert unknowns/TODOs into tracked backlog discovery tasks.
+1. Read `00` and `01` for scope and current-state framing.
+2. Validate inventories and endpoint/job/provider details in `07`.
+3. Review auth model + RBAC + coexistence plan in `02`.
+4. Review bounded-context ownership rules in `04`.
+5. Review first vertical strangler slice in `05`.
 
 ## Notes
 
-- Evidence is based on `ModernizationAssessment.md` plus legacy path references captured there.
-- Direct clone access to the legacy GitHub repository was unavailable in this execution environment.
+- This PR1 pass is evidence-driven from `ModernizationAssessment.md` path references.
+- An environment-backed verification pass is still required (IIS/services/tasks exports) before implementation planning is finalized.

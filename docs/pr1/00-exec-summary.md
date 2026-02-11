@@ -27,3 +27,11 @@ This PR establishes the **current-state baseline** for modernizing LDC-Legacy in
 
 - Findings are derived from the in-repo assessment artifact (`ModernizationAssessment.md`) which includes path-level references into the legacy codebase.
 - Direct clone access to `LDC-Legacy` was blocked in this environment; PR1 therefore includes explicit TODOs where direct verification is required.
+
+
+## PR1 refinements added
+
+- Added a first-pass evidence appendix with solution/endpoint/job/integration inventories (`07`).
+- Added explicit AuthN/AuthZ target model (tenant model, RBAC shape, migration coexistence).
+- Added explicit data ownership and stored-procedure boundary rules per bounded context.
+- Added one concrete first vertical strangler slice: NetSuite extract via outbox + Service Bus worker.

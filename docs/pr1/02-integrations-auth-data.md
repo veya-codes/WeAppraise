@@ -1,65 +1,66 @@
 # PR1.02 — Integrations, Auth Model, and Data Usage
 
-## Integrations map
+## Integration inventory (current state)
 
-| Integration | Legacy location(s) | Pattern | Criticality | Notes |
-|---|---|---|---|---|
-| Payment (HPCI) | `LandcorSystem/Landcor.Integration/Billing/HPCIPaymentProcessor.cs` | Synchronous service adapter from app/service logic | High | Payment path risk + security controls needed |
-| BC Online | `LandcorSystem/BCOnlineService/*`, `LandcorSystem/Landcor.Integration/*` | Windows Service job + adapter calls | Medium/High | Background workload likely batch-oriented |
-| NetSuite | `LandcorSystem/NetsuiteService/*` | Scheduled extract executable | Medium | Candidate for queue-triggered worker first |
-| Solidifi | `LandcorSystem/Landcor.Integration/*Solidifi*` | Integration adapter | Medium | Exact contracts unknown; confirm SLA/retry behavior |
-| ConstantContact | `LandcorSystem/Landcor.Integration/*ConstantContact*` | Integration adapter | Low/Medium | Marketing workflow likely separable |
-| Email/notifications | `LandcorSystem/*` (TBD) | SMTP/app-triggered notifications | Medium | Confirm templates + delivery provider |
-| Reporting services | `LandcorSystem/Landcor.Service.Internal/*`, `LandcorSystem/Landcor.Service.Business/*` | Service-side generation | High | Coupled to property/order workflows |
+| Provider | Legacy location(s) | Protocol | Auth mechanism | Retry / idempotency behavior | Secret location pattern |
+|---|---|---|---|---|---|
+| HPCI (payments) | `LandcorSystem/Landcor.Integration/Billing/HPCIPaymentProcessor.cs` | Provider API (service adapter) | API credentials/certs (legacy config-bound) | Appears synchronous; idempotency controls need explicit keying in modernization | Legacy `Web.config` / `App.config` patterns |
+| BC Online | `LandcorSystem/BCOnlineService/*`, `LandcorSystem/Landcor.Integration/*` | Service/API integration | Credential-based integration account | Worker-style retry likely in service loop; verify backoff/dead-letter behavior | Service config files |
+| NetSuite | `LandcorSystem/NetsuiteService/*` | Extract/integration job | Service account/API credentials | Batch retry semantics need explicit outbox/inbox tracking in target state | Service config files / scheduled runtime context |
+| Solidifi | `LandcorSystem/Landcor.Integration/*Solidifi*` | Provider API | Credential-based | Retry/idempotency contract requires confirmation | Legacy config |
+| ConstantContact | `LandcorSystem/Landcor.Integration/*ConstantContact*` | Provider API | API key/token | Typically eventual, low-criticality; still needs deterministic retry policy | Legacy config |
+| Email/notifications | `LandcorSystem/*` (mail sender components) | SMTP/provider API | SMTP/API credentials | Usually best-effort in legacy stacks; target should use queued reliable delivery | App/service config |
 
-## Internal integrations and coupling
+## Internal coupling map
 
 | Producer | Consumer | Coupling type | Risk |
 |---|---|---|---|
-| UI/WebService | `Landcor.Service.Business*` | Direct library reference | Medium |
-| Service.Business | `Landcor.DataAccess` | Shared mapper/stored proc access | High |
-| UI.Process | Auth/account services in business/data layer | Shared library + shared DB model | High |
-| Workers | `Landcor.Integration` + `Landcor.DataAccess` | Reused shared libraries | High |
+| UI and WebService entry points | `Landcor.Service.Business*` | Direct assembly dependency | Medium |
+| Business services | `Landcor.DataAccess` | Shared mapper + sproc access | High |
+| UI process/auth orchestration | Account services + shared DB model | Shared library and schema coupling | High |
+| Workers | `Landcor.Integration` + `Landcor.DataAccess` | Shared libraries across runtimes | High |
 
-## Authentication and authorization model (current)
+## Authentication and authorization
 
-- User auth appears to be custom account-based checks in service and UI process layers.
-- Session and login stamp validation are request-pipeline concerns in Web Forms apps.
-- No evidence in the baseline of modern OIDC/OAuth2 boundary enforcement.
-- Authorization appears mostly role/claim checks coupled to account data in SQL.
+### Current state (legacy)
 
-### Auth unknowns to confirm
+- Custom account/session-centric auth flows integrated into UI and service logic.
+- Request-pipeline session checks and login-stamp style validation in web runtime.
+- SOAP endpoint authentication appears account/service-call based (not token-based OAuth boundary).
 
-- Password hashing algorithm and rotation strategy.
-- MFA availability and enforcement scope.
-- API consumer authentication model for public SOAP endpoints.
-- Admin privilege model and audit trail coverage.
+### Target AuthN/AuthZ model (PR1 proposal)
+
+#### Tenant / org model
+- **Platform tenant:** Landcor platform boundary.
+- **Organization tenant:** customer organizations (e.g., realtor/broker/customer orgs) isolated by `OrganizationId`/`TenantId` claim.
+- **Internal tenant realm:** Landcor internal operations and support users with elevated operational scopes.
+
+#### RBAC shape
+- **Roles (coarse):** `OrgUser`, `OrgManager`, `Appraiser`, `BillingOperator`, `IntegrationOperator`, `SupportAdmin`, `PlatformAdmin`.
+- **Permissions (fine):** verb/resource permissions (e.g., `orders.read`, `orders.submit`, `reports.generate`, `integrations.retry`, `users.manage`).
+- **Scopes (token/API):** API scopes mapped per module (`property.read`, `order.write`, `report.read`, `admin.ops`).
+- **Policy model:** role grants default permissions; explicit deny/elevation for admin operations.
+
+#### Migration approach
+1. **Phase 1 (coexistence):** legacy session auth remains for legacy UI; introduce token validation at new .NET 8 API boundary.
+2. **Phase 2 (dual auth):** token exchange/bridge issues modern tokens from validated legacy session for migrated paths.
+3. **Phase 3 (cutover):** migrated modules require token-based auth; legacy session reduced to compatibility facade only.
+4. **Phase 4 (retire):** remove session bridge after UI and SOAP clients are fully migrated.
 
 ## Database usage patterns
 
-### Observed patterns
-
-1. **Stored procedure-centric** workflows for key transactions (e.g., shopping cart/report/order style operations).
-2. **Raw SQL + mapper classes** in shared `Landcor.DataAccess`.
-3. **Shared schema access** by multiple apps/services/workers.
-4. **Mixed EF + direct SQL** likely coexisting depending on module.
-
-### DB hotspots (expected)
-
-- Property search/read models.
-- Shopping cart/order/report transactions.
-- Account and session management.
-- Integration staging/reconciliation tables.
+1. Stored procedure-centric transactional workflows.
+2. Shared mapper layer with raw SQL/stored procedures in `Landcor.DataAccess`.
+3. Shared schema access by web, services, and workers.
+4. Mixed direct SQL/ORM usage depending on feature area.
 
 ## Data flows by app/service
 
 | App / host | Inbound | Core processing | Outbound |
 |---|---|---|---|
-| Store (consumer purchase flow) | Web request | Search → cart/order → payment → report generation | DB writes, payment calls, email/report artifacts |
-| Appraiser | Web/internal requests | Assignment/review/report workflows | DB state changes, integration callbacks |
-| RealEstate (Realtor UI) | Web request + auth/session | Property search, order/report retrieval | DB reads/writes, public/internal service calls |
-| Admin | Internal/admin web access | Account/support/config operations | DB admin updates, audit/log outputs |
-| WebService (public SOAP) | Partner SOAP call | Authenticate → execute search/report operations | SOAP response + DB/service calls |
-| WindowsService(s) | Timers/service start | Batch sync/extract/reconciliation | External integration APIs + DB updates |
-
-> Unknown: some app labels (Store/Appraiser/Admin) may map to legacy project names differently. Confirm naming alignment during PR2 implementation planning.
+| Store (consumer flow) | Web request | Search → cart/order → payment → report generation | DB writes, payment provider calls, notifications |
+| Appraiser | Web/internal request | Assignment/review/report workflows | DB updates, partner callbacks |
+| RealEstate (realtor) | Web request + user auth | Property search, order/report lifecycle | DB reads/writes, public/internal service calls |
+| Admin | Internal web/admin request | User/admin/config operations | DB admin updates, audit/log outputs |
+| WebService (public SOAP) | Partner SOAP request | Authenticate → execute operations | SOAP response + DB/service interactions |
+| WindowsService jobs | Service timers / scheduled triggers | Batch sync/extract/reconcile | External APIs + DB state transitions |
