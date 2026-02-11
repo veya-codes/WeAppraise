@@ -26,6 +26,8 @@
 
 ## Unknowns / TODOs
 
+Unknowns are centralized in `09-open-questions-verification-checklist.md` and treated as PR2 entry-gate items.
+
 - Unknown: authoritative list of production IIS sites, app pools, Windows services, and schedules.
 - Unknown: full external dependency register including credentials owners and expiry cycles.
 - Unknown: exact data retention/compliance requirements per workflow (PII/report artifacts).

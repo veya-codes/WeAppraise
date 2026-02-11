@@ -2,14 +2,14 @@
 
 ## Proposed bounded contexts
 
-| Bounded context | Responsibilities | Primary data ownership | External dependencies |
-|---|---|---|---|
-| Identity & Access | Authentication, authorization, token/session boundary, account policy | Users, roles, permission grants, auth audit | Identity provider integration, email/SMS verification |
-| Property & Valuation | Property search, valuation rules, appraisal workflows | Property entities, valuation artifacts, search projections | Registry/geodata sources, appraisal partners |
-| Orders & Cart | Cart, checkout, order lifecycle, payment orchestration | Cart/order/payment-intent tables | Payment providers, reporting trigger contracts |
-| Reporting & Documents | Report generation and retrieval | Report metadata, generation state, document references | Template engine, storage provider |
-| Integrations | Provider adapters, retries, reconciliation | Outbox/inbox, provider mapping and delivery state | BC Online, NetSuite, Solidifi, ConstantContact |
-| Admin & Operations | Support/admin tooling, feature flags, operational controls | Admin config, operational audit trail | Monitoring/alerting systems |
+| Bounded context | Responsibilities | Primary data ownership | Owned schema (provisional) | External dependencies |
+|---|---|---|---|---|
+| Identity & Access | Authentication, authorization, token/session boundary, account policy | Users, roles, permission grants, auth audit | `identity.*` | Identity provider integration, email/SMS verification |
+| Property & Valuation | Property search, valuation rules, appraisal workflows | Property entities, valuation artifacts, search projections | `property.*`, `valuation.*` | Registry/geodata sources, appraisal partners |
+| Orders & Cart | Cart, checkout, order lifecycle, payment orchestration | Cart/order/payment-intent tables | `orders.*`, `cart.*` | Payment providers, reporting trigger contracts |
+| Reporting & Documents | Report generation and retrieval | Report metadata, generation state, document references | `reporting.*`, `documents.*` | Template engine, storage provider |
+| Integrations | Provider adapters, retries, reconciliation | Outbox/inbox, provider mapping and delivery state | `integrations.*` | BC Online, NetSuite, Solidifi, ConstantContact |
+| Admin & Operations | Support/admin tooling, feature flags, operational controls | Admin config, operational audit trail | `admin.*`, `ops.*` | Monitoring/alerting systems |
 
 ## Explicit data ownership and access rules
 
@@ -26,6 +26,18 @@
 2. Modules cannot reference another module’s persistence implementation.
 3. Integration provider SDK/API clients exist only in Integrations module.
 4. Reporting, orders, and admin invoke integrations via module contracts (sync or async).
+
+## Hosting recommendation (PR1 default)
+
+- **API host default:** Azure App Service (fastest operational path for .NET 8 modular monolith).
+- **Background workers default:** Azure Container Apps jobs/workers for queue-driven integration/retry processors.
+- **When to choose AKS instead:** only if requirements exceed App Service + Container Apps (custom networking mesh, sidecars, high-scale microservice estate, or strict platform controls).
+
+## Database migration stance (PR1 default)
+
+- **Default choice now:** EF Migrations for **new module-owned schemas** (`identity.*`, `orders.*`, etc.).
+- **Legacy schema/sproc changes:** managed separately as SQL-first scripts during strangler period.
+- **Future shift trigger to Flyway:** adopt Flyway when multiple independently deployed services require strict SQL-first, repeatable, centrally governed migration pipelines.
 
 ## Reference target architecture
 
@@ -48,4 +60,6 @@
 2. ADR-002: Tenant and RBAC model implementation.
 3. ADR-003: Sproc compatibility and module-scoped DAL strategy.
 4. ADR-004: Integration reliability (outbox, retries, idempotency keys, dead-letter policy).
-5. ADR-005: Auth coexistence plan (legacy session + token boundary).
+5. ADR-005: Auth coexistence plan (legacy session + token boundary with Entra transition).
+6. ADR-006: Hosting baseline (App Service + Container Apps workers) and AKS trigger conditions.
+7. ADR-007: DB migration governance (EF for new schemas + SQL-first for legacy).

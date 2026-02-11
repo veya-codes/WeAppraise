@@ -23,15 +23,22 @@ This PR establishes the **current-state baseline** for modernizing LDC-Legacy in
 3. Apply strangler routing/use-case migration incrementally, starting with lower-coupled integration slices.
 4. Track unknowns as explicit risks/assumptions and convert them into discovery tasks.
 
+## Time-boxed success criteria
+
+- **90 days:** PR2 entry gate checklist closed; module scaffolding in .NET 8 delivered; first integration slice running in dual-run mode.
+- **6 months:** NetSuite path migrated behind outbox + worker with parity SLO met; cross-module data access policy enforced in CI.
+- **12 months:** majority of integration workloads moved behind Integrations module contracts; legacy session auth surface materially reduced.
+
 ## Evidence quality note
 
 - Findings are derived from the in-repo assessment artifact (`ModernizationAssessment.md`) which includes path-level references into the legacy codebase.
 - Direct clone access to `LDC-Legacy` was blocked in this environment; PR1 therefore includes explicit TODOs where direct verification is required.
 
-
 ## PR1 refinements added
 
 - Added a first-pass evidence appendix with solution/endpoint/job/integration inventories (`07`).
+- Added a use-case scorecard to prioritize carve-outs (`08`).
+- Added centralized PR2 entry-gate open questions/verification checklist (`09`).
 - Added explicit AuthN/AuthZ target model (tenant model, RBAC shape, migration coexistence).
 - Added explicit data ownership and stored-procedure boundary rules per bounded context.
 - Added one concrete first vertical strangler slice: NetSuite extract via outbox + Service Bus worker.

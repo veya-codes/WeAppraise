@@ -95,4 +95,4 @@ flowchart LR
 
 - Current state shows many entry points sharing the same business/data libraries.
 - Target state preserves one deployable first but enforces module interfaces and clearer dependency rules.
-- Integrations are centralized in one module and progressively moved toward asynchronous boundaries.
+- Target state assumes **internal module contracts** for cross-module calls and **outbox → Service Bus → worker** for integration fan-out, which is why Integrations is the only provider-facing module.

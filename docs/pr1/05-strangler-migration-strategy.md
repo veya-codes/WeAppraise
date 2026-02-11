@@ -9,6 +9,10 @@
 - Lower core-domain blast radius than valuation/order internals.
 - Immediate reliability gains via async outbox/retry/dead-letter patterns.
 
+### First provider target decision
+
+**PR1 decision:** NetSuite is the first provider carve-out target (lower blast radius than HPCI payments, clearer batch boundary than appraisal/payment hot paths).
+
 ## First concrete vertical slice (PR1 target)
 
 ### Slice: NetSuite extract modernization
@@ -45,7 +49,7 @@
 |---|---|---|---|
 | Wave 0 | Baseline + observability | Endpoint/job inventory, telemetry, error budgets | Current-state behavior measurable |
 | Wave 1 | Modularize in place | Module skeletons, dependency rules, adapter seams | New code follows module boundaries |
-| Wave 2 | Integrations strangler | NetSuite vertical slice + outbox + queue worker + parity dashboard | One provider path decoupled and parity-proven |
+| Wave 2 | Integrations strangler | NetSuite vertical slice + outbox + queue worker + parity dashboard | >= 60% of NetSuite integration calls executed through outbox+worker path for 2 consecutive release cycles |
 | Wave 3 | Reporting isolation | Async generation + document abstraction | Report jobs resilient and replayable |
 | Wave 4 | Auth modernization | Token boundary + compatibility bridge for legacy clients | Legacy session coupling reduced |
 | Wave 5 | Core domain refactor | Context-owned repos/contracts | Cross-context DB writes removed from hot paths |
