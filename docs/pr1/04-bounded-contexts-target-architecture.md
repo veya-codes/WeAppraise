@@ -30,7 +30,7 @@
 ## Hosting recommendation (PR1 default)
 
 - **API host default:** Azure App Service (fastest operational path for .NET 8 modular monolith).
-- **Background workers default:** Azure Container Apps jobs/workers for queue-driven integration/retry processors.
+- **Background workers default:** .NET Worker Service, with Container Apps as a later deployment target when needed.
 - **When to choose AKS instead:** only if requirements exceed App Service + Container Apps (custom networking mesh, sidecars, high-scale microservice estate, or strict platform controls).
 
 ## Database migration stance (PR1 default)
@@ -38,6 +38,18 @@
 - **Default choice now:** EF Migrations for **new module-owned schemas** (`identity.*`, `orders.*`, etc.).
 - **Legacy schema/sproc changes:** managed separately as SQL-first scripts during strangler period.
 - **Future shift trigger to Flyway:** adopt Flyway when multiple independently deployed services require strict SQL-first, repeatable, centrally governed migration pipelines.
+
+
+## PR2 defaults (decision baseline)
+
+- **API hosting:** Azure App Service.
+- **Background processing:** .NET Worker Service first (Container Apps deployment target can be introduced later if scale/ops requires it).
+- **Messaging:** Azure Service Bus.
+- **DB migrations:** EF Core migrations for new module-owned schemas.
+- **Secrets:** Managed Identity + Key Vault.
+- **Observability:** Application Insights + OpenTelemetry.
+- **Legacy DB evolution during strangler:** SQL-first scripts for legacy schemas/sprocs.
+- **Promotion rule:** any deviation from these defaults requires an ADR before PR2 implementation starts.
 
 ## Reference target architecture
 

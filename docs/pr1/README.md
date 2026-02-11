@@ -6,6 +6,25 @@ This folder contains the PR1 documentation set for assessing legacy current stat
 
 - **Open Questions / Verification Checklist:** [09-open-questions-verification-checklist.md](./09-open-questions-verification-checklist.md)
 
+## Open Questions / Verification Checklist (review quick list)
+
+- [ ] Export production IIS sites/app pools + bindings.
+- [ ] Export Windows Services list + service accounts + start modes.
+- [ ] Export Scheduled Tasks list + triggers + run-as identities.
+- [ ] Inventory SQL Agent jobs (if any).
+- [ ] Inventory secret locations + rotation owners.
+- [ ] Capture traffic volume and top endpoints (baseline telemetry).
+- [ ] Confirm identity/tenant model with business (internal vs external orgs).
+
+## Decision defaults for PR2
+
+- API hosting: Azure App Service.
+- Background processing: .NET Worker Service (Container Apps later if needed).
+- Messaging: Azure Service Bus.
+- DB migrations: EF Core migrations for new module-owned schemas.
+- Secrets: Managed Identity + Key Vault.
+- Observability: Application Insights + OpenTelemetry.
+
 ## Document index
 
 1. [00-exec-summary.md](./00-exec-summary.md)
@@ -32,4 +51,6 @@ This folder contains the PR1 documentation set for assessing legacy current stat
 ## Notes
 
 - This PR1 pass is evidence-driven from `ModernizationAssessment.md` path references.
+- All repo path citations in PR1 map back to this artifact; PR1 does not yet include direct source scan evidence.
+- PR1 is now evidence-complete at the source-code level; runtime confirmation remains.
 - An environment-backed verification pass is still required (IIS/services/tasks exports) before implementation planning is finalized.

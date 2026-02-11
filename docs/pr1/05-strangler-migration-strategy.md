@@ -13,6 +13,8 @@
 
 **PR1 decision:** NetSuite is the first provider carve-out target (lower blast radius than HPCI payments, clearer batch boundary than appraisal/payment hot paths).
 
+**The first provider to be strangled will be NetSuite, due to batch-oriented behavior, low interactive coupling, and clear async suitability.**
+
 ## First concrete vertical slice (PR1 target)
 
 ### Slice: NetSuite extract modernization
